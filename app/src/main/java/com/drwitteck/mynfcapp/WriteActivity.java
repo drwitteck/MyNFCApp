@@ -2,23 +2,17 @@ package com.drwitteck.mynfcapp;
 
 import android.app.PendingIntent;
 import android.content.Intent;
-import android.nfc.FormatException;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
+import android.nfc.NfcEvent;
 import android.nfc.Tag;
-import android.nfc.tech.Ndef;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
-
-import java.io.IOException;
-
-public class WriteActivity extends AppCompatActivity {
+public class WriteActivity extends AppCompatActivity implements NfcAdapter.CreateNdefMessageCallback {
     PendingIntent pi;
 
     @Override
@@ -26,10 +20,10 @@ public class WriteActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_write);
 
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(this, ReadActivity.class);
         pi = PendingIntent.getActivity(this, 0, intent, 0);
 
-        findViewById(R.id.link).setOnClickListener((View v) ->
+        findViewById(R.id.writeTag).setOnClickListener((View v) ->
                 startActivity(new Intent(this, WriteActivity.class)));
     }
 
@@ -50,6 +44,7 @@ public class WriteActivity extends AppCompatActivity {
     @Override
     protected void onNewIntent(Intent intent){
         if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction())){
+
             String payload = ((TextView) findViewById(R.id.payloadText)).getText().toString();
 
             Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
@@ -60,17 +55,27 @@ public class WriteActivity extends AppCompatActivity {
 
             NdefMessage message = new NdefMessage(new NdefRecord[]{payloadRecord});
 
-            Ndef ndef = Ndef.get(tag);
-
-            try {
-                ndef.connect();
-                ndef.writeNdefMessage(message);
-            } catch (IOException | FormatException e) {
-                e.printStackTrace();
-            }
-
-
+            /*Below can removed if you implement NFCAdapter.CreateNdefMesageCallback*/
+//            Ndef ndef = Ndef.get(tag);
+//
+//            try {
+//                ndef.connect();
+//                ndef.writeNdefMessage(message);
+//            } catch (IOException | FormatException e) {
+//                e.printStackTrace();
+//            }
         }
 
+    }
+
+    @Override
+    public NdefMessage createNdefMessage(NfcEvent nfcEvent) {
+        String payload = ((TextView) findViewById(R.id.payloadText)).getText().toString();
+
+        NdefRecord payloadRecord = NdefRecord.createTextRecord(null, payload);
+
+        NdefRecord aarRecord = NdefRecord.createApplicationRecord(getPackageName());
+
+        return new NdefMessage(new NdefRecord[]{payloadRecord, aarRecord});
     }
 }
